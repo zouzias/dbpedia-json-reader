@@ -22,11 +22,21 @@ import com.google.gson.stream.{JsonReader, JsonToken}
 import org.apache.commons.logging.LogFactory
 
 
+/**
+ * Iterator of any Dbpedia entity to a map of keys to Array of String.
+ *
+ * The input entities can be found at: http://oldwiki.dbpedia.org/DBpediaAsTables
+ *
+ * TODO: Use a better type instead of Map[String, Array[String]]
+ *
+ * @param dbpediaJsonFileName file path to a Json dbpedia, say Person.json
+ */
 class DbpediaJsonIterator(dbpediaJsonFileName: String) extends Iterator[Map[String, Array[String]]]
   with AutoCloseable {
 
-  private val logger = LogFactory.getLog("DbpediaJsonReader")
+  private val logger = LogFactory.getLog("DbpediaJsonIterator")
 
+  /* Json stream reader */
   val reader = new JsonReader(new FileReader(dbpediaJsonFileName))
 
   var isInit: Boolean = false
@@ -35,6 +45,9 @@ class DbpediaJsonIterator(dbpediaJsonFileName: String) extends Iterator[Map[Stri
     reader.hasNext
   }
 
+  /**
+   * Initialite the streaming reader
+   */
   private def initReader(): Unit = {
     reader.beginObject()
 
@@ -48,7 +61,6 @@ class DbpediaJsonIterator(dbpediaJsonFileName: String) extends Iterator[Map[Stri
     if (reader.hasNext()) {
       val name = reader.nextName()
       if (name.compareToIgnoreCase("instances") == 0) {
-        // read array
         reader.beginArray()
       }
     }
@@ -58,28 +70,21 @@ class DbpediaJsonIterator(dbpediaJsonFileName: String) extends Iterator[Map[Stri
 
   override def next(): Map[String, Array[String]] = {
 
-    if ( !isInit) {
-      initReader()
-    }
+    if ( !isInit) initReader()
 
     reader.beginObject()
-    // Read the ID
-    val id = reader.nextName()
-
+    val id = reader.nextName() // Read the identifier of the dbpedia record, URI
     var record = readRecord(reader)
 
-    // Add an extra "id" field
-    record = record.updated("id", Array(id))
-
+    record = record.updated("id", Array(id)) // Add an extra "id" field
     reader.endObject() // end of object
-
     record
   }
 
   /**
-   * Read a record.
+   * Read a Dbpedia record as map
    *
-   * @return Record as map String -> object
+   * @return Dbpedia record as a map of String to Array[String]
    */
   private def readRecord(reader: JsonReader): Map[String, Array[String]] = {
 
@@ -93,10 +98,9 @@ class DbpediaJsonIterator(dbpediaJsonFileName: String) extends Iterator[Map[Stri
         val token: JsonToken = reader.peek()
 
         token match {
-          case JsonToken.BEGIN_ARRAY => {
+          case JsonToken.BEGIN_ARRAY =>
             val values = readStringArray(reader)
             record = record.updated(field, values.toArray)
-          }
           case JsonToken.STRING =>
             val value = reader.nextString()
             if (!isNull(value)) {
@@ -140,9 +144,7 @@ class DbpediaJsonIterator(dbpediaJsonFileName: String) extends Iterator[Map[Stri
 
       while (reader.hasNext()) {
         val value = reader.nextString()
-        if (!isNull(value)) {
-          values += value
-        }
+        if (!isNull(value)) values += value
       }
 
       reader.endArray()

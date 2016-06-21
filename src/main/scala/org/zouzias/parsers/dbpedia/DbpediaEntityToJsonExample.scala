@@ -23,13 +23,13 @@ import org.apache.commons.logging.LogFactory
 import spray.json._
 import DefaultJsonProtocol._
 
-object Example {
+/**
+ * Example converting a Dbpedia entity to Json
+ */
+object DbpediaEntityToJsonExample {
 
   private val logger = LogFactory.getLog("Example")
 
-  /**
-   * @param args the command line arguments
-   */
   def main(args: Array[String]): Unit = {
 
     val entity = "Food"
@@ -45,5 +45,4 @@ object Example {
     pw.close()
     // scalastyle:on println
   }
-
 }
